@@ -1,0 +1,74 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: vendedor_ia
+      POSTGRES_PASSWORD: vendedor_ia
+      POSTGRES_DB: vendedor_ia
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vendedor_ia"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # Gateway WhatsApp self-hosted (ver docs/ARCHITECTURE.md). Precisa de configuração
+  # própria (criar instância, escanear QR code) antes do primeiro uso — não é
+  # "pronto para rodar" da mesma forma que o backend; ver https://doc.evolution-api.com.
+  evolution-api:
+    image: atendai/evolution-api:latest
+    ports:
+      - "8080:8080"
+    environment:
+      AUTHENTICATION_API_KEY: troque-esta-chave
+      DATABASE_ENABLED: "false"
+    volumes:
+      - evolution_data:/evolution/instances
+
+  api:
+    build: ./backend
+    env_file:
+      - ./backend/.env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://vendedor_ia:vendedor_ia@postgres:5432/vendedor_ia
+      REDIS_URL: redis://redis:6379/0
+      EVOLUTION_API_URL: http://evolution-api:8080
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  worker:
+    build: ./backend
+    env_file:
+      - ./backend/.env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://vendedor_ia:vendedor_ia@postgres:5432/vendedor_ia
+      REDIS_URL: redis://redis:6379/0
+      EVOLUTION_API_URL: http://evolution-api:8080
+    command: ["arq", "app.worker.worker_settings.WorkerSettings"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
+  evolution_data:

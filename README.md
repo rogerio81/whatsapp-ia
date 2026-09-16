@@ -2,7 +2,7 @@
 
 Um funcionário de IA que atende, vende e faz follow-up pelo WhatsApp do lojista — sem painel, sem planilha, sem treinamento.
 
-> Este repositório está na fase de concepção do produto. Ainda não há código de implementação.
+> Este repositório saiu da fase de concepção: já há um backend inicial rodando (`backend/`), com o produto ainda em fase de validação.
 
 ## A ideia
 
@@ -22,10 +22,18 @@ O PRD completo (problema, público-alvo, funcionalidades do MVP, fluxo de venda,
 
 **https://claude.ai/artifact/GVcz2s4LiuDoZM3buRpad5**
 
+## Arquitetura técnica
+
+Primeira versão do desenho técnico (stack, componentes, fluxo de mensagem, modelo de dados, decisões e pontos em aberto) está em [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
+
+## Backend
+
+Implementação inicial em Python (FastAPI + SQLAlchemy + Claude API) em [`backend/`](backend) — ver [`backend/README.md`](backend/README.md) para rodar local ou com Docker.
+
 ## Status
 
 - [x] Ideia e proposta de valor definidas
 - [x] PRD v0.1
 - [ ] Validação com lojistas piloto
-- [ ] Arquitetura técnica
-- [ ] MVP
+- [x] Arquitetura técnica (v0.1 — sujeita a revisão)
+- [ ] MVP (backend inicial no ar, faltam gateway de pagamento real e teste com instância viva do WhatsApp)
