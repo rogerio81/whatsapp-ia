@@ -35,6 +35,37 @@ uvicorn app.main:app --reload         # API
 arq app.worker.worker_settings.WorkerSettings   # worker (outro terminal)
 ```
 
+## Simular mensagens sem WhatsApp real
+
+Enquanto não há uma instância do Evolution API conectada, dá pra testar o agente
+inteiro (webhook → fila → Claude com tool use → resposta) direto pela API.
+
+1. Popule um negócio de teste com catálogo:
+   ```bash
+   python -m scripts.seed_demo
+   ```
+   Cria a instância `loja-teste` com duas peças cadastradas (blusa preta P/M/G,
+   calça jeans 38/40). Rodar de novo é seguro — não duplica.
+
+2. Simule uma mensagem de cliente chegando:
+   ```bash
+   curl -X POST http://localhost:8000/webhooks/evolution \
+     -H "Content-Type: application/json" \
+     -d '{
+       "event": "messages.upsert",
+       "instance": "loja-teste",
+       "data": {
+         "key": {"id": "MSG1", "remoteJid": "5511999999999@s.whatsapp.net", "fromMe": false},
+         "message": {"conversation": "Oi, quanto custa a blusa preta?"},
+         "pushName": "Ana"
+       }
+     }'
+   ```
+   O backend cria a cliente automaticamente, enfileira o processamento, e o worker
+   chama o Claude (precisa de `ANTHROPIC_API_KEY` válida) e tenta enviar a resposta
+   via Evolution API — sem uma instância real conectada, o envio final falha, mas dá
+   pra ver a resposta do agente nos logs do worker (`docker compose logs -f worker`).
+
 ## Testes
 
 ```bash
@@ -64,6 +95,8 @@ app/
     └── worker_settings.py
 
 alembic/                     # migrações (assíncrono)
+scripts/
+└── seed_demo.py             # popula negócio + catálogo de teste (ver seção abaixo)
 tests/
 ```
 
